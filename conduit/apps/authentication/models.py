@@ -41,3 +41,58 @@ class UserManger(BaseUserManager):
         user.save()
 
         return user
+
+class User(AbstractBaseUser, PermissionsMixin):
+    """
+    Custom User Model which use email to logging in
+    """
+    username = models.CharField(db_index=True, max_length=255, unique=True)
+    email = models.EmailField(db_index=True, unique=True)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+    objects = UserManger()
+
+    def __str__(self):
+        """
+        Returns a string representation of this `User`.
+        we return email of user
+        """
+        return self.email
+
+    @property
+    def token(self):
+        """
+        Allows us to get a user's token by calling `user.token` instead of
+        """
+        return self._generate_jwt_token()
+
+    def _generate_jwt_token(self):
+        """
+        Generates a JSON Web Token that stores this user's ID and has an expiry
+        date set to 60 days into the future.
+        """
+        dt = datetime.now() + timedelta(days=60)
+        token = jwt.encode({
+            'id': self.pk,
+            'exp': int(dt.strftime('%s'))
+        },settings.SECRET_KEY, algorithm='HS256')
+        return token.decode('utf-8')
+
+
+    def get_full_name(self):
+        """
+        since we dont store name and family name so we return username instead
+        """
+        return self.username
+
+    def get_short_name(self):
+
+        """
+        since we dont store name and so we return username instead
+
+        """
+        return self.username
